@@ -1,0 +1,36 @@
+---
+
+nginx:
+  # Cache folder prefix for nginx proxy/fastcgi caching
+  cachePath: "/var/cache/nginx"
+
+  # an array of IP addresses/CIDRs allowed to access
+  # applications even when the maintenance page is present
+  allowedDuringMaintenance:
+    - "192.168.0.0/16"
+
+php:
+  install:
+    # which version of PHP to install - supported: 5.3, 5.4
+    version: 5.4
+
+    # Install composer?
+    composer: true
+
+    # which PHP packages to install
+    packages:
+      - "php5-cli"
+      - "php5-common"
+      - "php5-curl"
+      - "php5-dev"
+      - "php5-gd"
+      - "php5-mcrypt"
+      - "php5-memcache"
+      - "php5-mysql"
+      - "php5-xmlrpc"
+
+    # an array of pear packages to install
+    pearPackages: []
+
+    # an array of pecl packages to install
+    peclPackages: []
