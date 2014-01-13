@@ -1,97 +1,212 @@
+# -------------------------------------------------------------
+# {{ ansible_managed }}
+#
+# Configuration file inspired by:
+#   - Calomel: https://calomel.org/nginx.html
+#   - Dak1n1: http://dak1n1.com/blog/12-nginx-performance-tuning
+#   - Myself: https://github.com/aldoborrero/wordpress-nginx/blob/master/nginx.conf
+# -------------------------------------------------------------
 
-user                  www-data;
+user                       www-data;
+pid                        /var/run/nginx.pid;
 
-# max clients = worker_processes * worker_connections
-worker_processes      {{ nginxWorkerProcesses }};
-
-error_log             /var/log/nginx/nginx.log;
-pid                   /var/run/nginx.pid;
-
-# per worker # of file descriptors allowed,
-# each connection may need one or more file descriptors
-worker_rlimit_nofile  38912;
+# This number should be, at maximum, the number of CPU cores on your system. 
+# (nginx doesn't benefit from more than one worker per CPU).
+worker_processes           {{ ansible_processor_cores }};
 
 events {
-  # allow a high number of connections
-  worker_connections  19456;
-  use                 epoll;
-  multi_accept        on;
+  # Determines how many clients will be served by each worker process.
+  # (Max clients = worker_connections * worker_processes)
+  # "Max clients" is also limited by the number of socket connections available on the system (~64k)
+  worker_connections         4000;
+
+  # Essential for Linux, optmized to serve many clients with each thread.
+  use                        epoll;
+
+  # Accept as many connections as possible, after nginx gets notification about a new connection.
+  # May flood worker_connections, if that option is set too low.
+  multi_accept               on;
 }
 
+# Number of file descriptors used for Nginx. This is set in the OS with 'ulimit -n 200000'
+# or using /etc/security/limits.conf
+worker_rlimit_nofile       200000;
+
+# Only log critical errors.
+error_log                  /var/log/nginx/nginx.log crit;
+
 http {
-  ## MIME types
-  include           /etc/nginx/mime.types;
-  default_type      application/octet-stream;
+  # -----------------------------------------
+  # HttpCoreModule Section
+  # URL: http://wiki.nginx.org/HttpCoreModule
+  # -----------------------------------------
 
-  access_log off;
+  # Hide nginx version.
+  server_tokens            off;
 
-  ## sendfile on to speed up I/O ops
-  sendfile                     on;
+  # Auto explanatory
+  ignore_invalid_headers   on;
 
-  ## real IP
-  set_real_ip_from             127.0.0.1/32; # for proxied SSL
-  real_ip_header               X-Forwarded-For;
+  # Enables following a chain of error_page directives.
+  recursive_error_pages    on;
 
-  ## timeouts
-  client_header_timeout        60;
-  client_body_timeout          60;
-  keepalive_timeout            10 10;
-  send_timeout                 60;
+  # Sendfile copies data between one File Descriptor and other from within the kernel. 
+  # More efficient than read() + write(), since that requires transferring data to and from the user space.
+  sendfile                 on;
 
-  ## reset lingering timed out connections, deflects DDoS
-  reset_timedout_connection    on;
+  # tcp_nopush causes nginx to attempt to send its HTTP response head in one packet, instead of using partial frames. 
+  # This is useful for prepending headers before calling sendfile, or for throughput optimization.
+  tcp_nopush               on;
+  
+  # Don't buffer data-sends (disable Nagle algorithm). Good for sending frequent small bursts of data in real time.
+  tcp_nodelay              on;
 
-  ## body size
-  client_max_body_size         25m;
+  # The standard MIME map (http://en.wikipedia.org/wiki/Internet_media_type)
+  include                  mime.types;
 
-  ## TCP options
-  tcp_nodelay                  on;
-  tcp_nopush                   on;
+  # Assigns the default MIME-type to be used for files where the standard MIME map doesn't specify anything.
+  default_type             application/octet-stream;
 
-  ## if modified
-  if_modified_since            before;
+  # Number of requests a client can make over the keep-alive connection.
+  keepalive_requests       20;
 
-  ## compression
-  gzip                         on;
-  gzip_http_version            1.1;
-  gzip_comp_level              2;
-  gzip_min_length              10;
-  gzip_proxied                 any;
-  gzip_buffers                 16 8k;
-  gzip_types                   text/plain text/css application/x-javascript text/xml application/xml application/xml+rss text/javascript image/x-icon application/vnd.ms-fontobject font/opentype application/x-font-ttf;
-  gzip_disable                 "msie6";
-  gzip_static                  on;
+  # Timeout for keep-alive connections. Server will close connections after this time.
+  keepalive_timeout        300 300;
+  
+  # Disable keepalive for certain user agents. 
+  # By default keepalive is disabled for MS Internet Explorer (older than 6.0 service pack 2) after POST requests, and for Safari. 
+  # This is because both browsers have issues with handling POST requests with keepalives.
+  keepalive_disable        'msie6';
+  
+  # If the client stops reading data, free up the stale client connection after this much time.
+  send_timeout             30;
 
-  ## hide NGINX version
-  server_tokens                off;
+  # Disable file resuming
+  max_ranges               0;
 
-  ## Use a SSL/TLS cache for SSL session resume. This needs to be
-  ## here (in this context, for session resumption to work. See this
-  ## thread on the Nginx mailing list:
-  ## http://nginx.org/pipermail/nginx/2010-November/023736.html.
-  ssl_session_cache            shared:SSL:10m;
-  ssl_session_timeout          10m;
+  # The directive sets the cache activity on. This cache stores:
+  #   - Open file descriptors, information with their size and modification time
+  #   - Information about the existence of directories
+  #   - Error information when searches for a file - no file, do not have rights to read, etc
+  #
+  # Params:
+  #   - max - specifies the maximum number of entries in the cache. When the cache overflows, the least recently used(LRU) items will be removed
+  #   - inactive - specifies the time when the cached item is removed, if it has not been downloaded during that time 
+  #
+  # Changing this settings can bring performance gains (don't forget to test it though!)
+  open_file_cache          max=1000 inactive=30s;
 
-  map_hash_bucket_size         192;
-  variables_hash_bucket_size   128;
-  variables_hash_max_size      1024;
-  types_hash_max_size          2048;
+  # This specifies whether or not to cache errors when searching for a file. Yes plz!
+  open_file_cache_errors   on;
 
-  ## enable clickjacking protection in modern browsers. available in
-  ## IE8 also. See
-  ## https://developer.mozilla.org/en/The_X-FRAME-OPTIONS_response_header
-  add_header                    X-Frame-Options SAMEORIGIN;
+  # If use more than the number, the file descriptor will remain open in the cache.
+  open_file_cache_min_uses 2;
 
-  ## proxy settings
-  proxy_set_header              Host  $host;
-  proxy_set_header              X-Real-IP $remote_addr;
-  proxy_set_header              X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_hide_header             X-Powered-By;
-  proxy_hide_header             X-Frame-Options;
-  proxy_buffers                 8 16k;
-  proxy_buffer_size             32k;
+  # The directive specifies the time needed to check the validity of the information about the item in the cache.
+  open_file_cache_valid    30s;
 
-  ## fastcgi settings
+  # Specifies how to compare time of file modification and time in request header "If-Modified-Since":
+  #   - before — file modification time should be less than time in "If-Modified-Since" request header.
+  if_modified_since        before;
+
+  # This will make sure nginx closes stale client connections.
+  # Bad, lazy or abusive clients may try to open up many connections and keep them open to use up available sockets (DDoS). 
+  reset_timedout_connection on;
+
+  # ---------------------------------------------------------------
+  # HttpHeadersModule Section
+  # URL: http://nginx.org/en/docs/http/ngx_http_headers_module.html
+  # ---------------------------------------------------------------
+
+  # Enables clickjacking protection in modern browsers. 
+  # See https://developer.mozilla.org/en/The_X-FRAME-OPTIONS_response_header
+  add_header               X-Frame-Options SAMEORIGIN;
+
+  # --------------------------------------------
+  # HttpCharsetModule Section
+  # URL: http://wiki.nginx.org/HttpCharsetModule
+  # --------------------------------------------
+
+  charset                  utf-8;
+  source_charset           utf-8;
+
+  # -----------------------------------------------
+  # HttpGzipStaticModule
+  # URL: http://wiki.nginx.org/HttpGzipStaticModule
+  # -----------------------------------------------
+  
+  gzip_static              on;
+
+  # -----------------------------------------
+  # HttpGzipModule Section
+  # URL: http://wiki.nginx.org/HttpGzipModule
+  # -----------------------------------------
+
+  gzip                     on;
+  gzip_disable             "msi6";
+  gzip_http_version        1.1;
+
+  # Enables response header of "Vary: Accept-Encoding".
+  gzip_vary                on;
+
+  gzip_comp_level          3;
+
+  # Sets the minimum length, in bytes, of the response that will be compressed.
+  gzip_min_length          10;
+
+  # Assigns the number and the size of the buffers into which to store the compressed response. 
+  # If unset, the size of one buffer is equal to the size of page, depending on platform this either 4K or 8K.
+  #gzip_buffers             16 8k;
+  
+  # Allows compressed responses for any request even from proxies.
+  gzip_proxied             any;
+
+  gzip_types               text/css text/javascript application/x-javascript text/x-component text/richtext image/svg+xml text/plain text/xsd text/xsl text/xml image/x-icon image/bmp application/xml application/xml+rss application/vnd.ms-fontobject font/opentype application/x-font-ttf;
+
+  # -----------------------------------------------------------
+  # HttpSslModule Section
+  # URL: http://nginx.org/en/docs/http/ngx_http_ssl_module.html
+  # -----------------------------------------------------------
+
+  # Use a SSL/TLS cache for SSL session resume. 
+  # This needs to be here (in this context, for session resumption to work). 
+  # More info: http://nginx.org/pipermail/nginx/2010-November/023736.html
+  ssl_session_cache        shared:SSL:10m;
+  ssl_session_timeout      10m;
+
+  # --------------------------------------------------------------
+  # HttpRealipModule Section
+  # URL: http://nginx.org/en/docs/http/ngx_http_realip_module.html
+  # --------------------------------------------------------------
+
+  #real_ip_header           X-Forwarded-For;
+  #set_real_ip_from         127.0.0.1/32;
+
+  # -------------------------------------------------------------
+  # HttpProxyModule Section
+  # URL: http://nginx.org/en/docs/http/ngx_http_proxy_module.html
+  # -------------------------------------------------------------
+
+  proxy_set_header          Host $host;
+  proxy_set_header          X-Real-IP $remote_addr;
+  proxy_set_header          X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_hide_header         X-Powered-By;
+  proxy_hide_header         X-Frame-Options;
+  proxy_buffers             8 16k;
+  proxy_buffer_size         32k;
+  proxy_temp_path           /var/lib/nginx/proxy;
+  proxy_cache_path          {{ nginx.cachePath }}/proxy/ levels=1:2
+                            keys_zone=proxy_short:5m
+                            inactive=2m  max_size=1G
+                            loader_threshold=2592000000 loader_sleep=1 loader_files=100000;
+
+  # ---------------------------------------------------------------
+  # HttpFastCgiModule Section
+  # URL: http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html
+  # ---------------------------------------------------------------
+
+  include                       /etc/nginx/fastcgi_params;
+
   fastcgi_connect_timeout       60;
   fastcgi_send_timeout          180;
   fastcgi_read_timeout          180;
@@ -102,30 +217,44 @@ http {
   fastcgi_intercept_errors      off;
   fastcgi_hide_header           X-Powered-By;
   fastcgi_hide_header           X-Frame-Options;
-  include                       /etc/nginx/fastcgi_params;
+  fastcgi_temp_path             /var/lib/nginx/fastcgi;
+  fastcgi_cache_path            {{ nginx.cachePath }}/fcgi/ levels=1:2
+                                keys_zone=fastcgi_short:5m
+                                inactive=2m  max_size=1G
+                                loader_threshold=2592000000 loader_sleep=1 loader_files=100000;  
 
-  ## connection/request limit zones
-  limit_conn_zone   $binary_remote_addr    zone=connection_limit:10m;
-  limit_req_zone    $binary_remote_addr    zone=request_limit:10m  rate=5r/s;
+  # ------------------------------------------------------------------
+  # HttpLimitConnModule Section
+  # URL: http://nginx.org/en/docs/http/ngx_http_limit_conn_module.html
+  # ------------------------------------------------------------------
 
-  ## proxy tmp paths
-  proxy_temp_path     /var/lib/nginx/proxy;
-  fastcgi_temp_path   /var/lib/nginx/fastcgi;
+  # Sets the shared memory zone and the maximum allowed number of connections for a given key value. 
+  # When this limit is exceeded, the server will return the 503 (Service Temporarily Unavailable) error in reply to a request.
+  limit_conn_zone          $binary_remote_addr  zone=connection_limit:10m;
 
-  ## map for allowed methods
-  map $request_method $not_allowed_method {
-    default 1;
-    GET 0;
-    HEAD 0;
-    POST 0;
-    PUT 0;
-    PATCH 0;
-    DELETE 0;
-  }
+  # -----------------------------------------------------------------
+  # HttpLimitReqModule Section
+  # URL: http://nginx.org/en/docs/http/ngx_http_limit_req_module.html
+  # -----------------------------------------------------------------
 
-  ## include all conf.d configs
-  include /etc/nginx/conf.d/*.conf;
+  # This directive used to limit the request processing rate per for requests coming from a single IP address.
+  limit_req_zone           $binary_remote_addr  zone=request_limit:10m  rate=5r/s;
+
+  # ----------------------------------------
+  # HttpLogModule Section
+  # URL: http://wiki.nginx.org/HttpLogModule
+  # ----------------------------------------
+
+  # Buffer log writes to speed up IO, or disable them altogether
+  #access_log /var/log/nginx/access.log main buffer=16k;
+  access_log               off;
+
+  # Apache Style
+  log_format  main         '$remote_addr $host $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $ssl_cipher $request_time';
+
+  # ---------------------------------------------
+  # ---------------------------------------------
 
   ## include all virtualhosts
-  include /etc/nginx/sites-enabled/*.conf;
+  #include /etc/nginx/sites-enabled/*.conf;
 }

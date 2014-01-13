@@ -1,4 +1,5 @@
 ---
+
 - name: install nginx
   apt: pkg={{ item }} state=installed update_cache=yes cache_valid_time=3600
   with_items:
@@ -18,23 +19,9 @@
     owner=root group=root mode=0644
   notify: nginx reload
 
-- name: add /etc/nginx/conf.d/allowed-maintenance.conf
-  template: >
-    src=etc-nginx-conf.d-allowed-maintenance.conf.j2
-    dest=/etc/nginx/conf.d/allowed-maintenance.conf
-    owner=root group=root mode=0644
-  notify: nginx reload
-
-- name: add /etc/nginx/conf.d/caching.conf
-  template: >
-    src=etc-nginx-conf.d-caching.conf.j2
-    dest=/etc/nginx/conf.d/caching.conf
-    owner=root group=root mode=0644
-  notify: nginx reload
-
 - name: ensure directory nginx cache path
   file: >
-    path={{ nginxCachePath }} state=directory
+    path={{ nginx.cachePath }} state=directory
     owner=root group=root mode=0755
 
 - name: remove default provided nginx site
