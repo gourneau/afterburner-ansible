@@ -1,0 +1,8 @@
+---
+
+memcache:
+  user: "memcached"
+  listenIp: "127.0.0.1"
+  listenPort: 11211
+  memoryLimit: 128
+  incomingConnections: 8192
