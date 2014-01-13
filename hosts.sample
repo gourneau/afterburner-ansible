@@ -1,8 +1,8 @@
 [mysql-servers]
-afterburner.local
+domain.com
 
 [memcached-servers]
-afterburner.local
+domain.com
 
 [web-servers]
-afterburner.local
+domain.com

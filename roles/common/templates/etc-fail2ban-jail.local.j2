@@ -1,18 +1,23 @@
 [DEFAULT]
-ignoreip  = 127.0.0.1 {% for _ip in fail2banWhiteList %}{{ _ip }}{% endfor %}
+ignoreip  = 127.0.0.1 {% for _ip in common.fail2ban.whiteList %}{{ _ip }}{% endfor %}
 
 bantime   = 86400
-destemail = {{ adminEmail }}
+destemail = {{ common.adminEmail }}
 banaction = iptables-multiport
 action    = %(action_mwl)s
 
+{% if common.fail2ban.services.enabled.ssh %}
 [ssh]
 enabled   = true
 maxretry  = 3
+{% endif %}
 
+{% if common.fail2ban.services.enabled.sshddos %}
 [ssh-ddos]
 enabled   = true
+{% endif %}
 
+{% if common.fail2ban.services.enabled.nginx %}
 [nginx]
 enabled   = true
 port      = http
@@ -21,3 +26,4 @@ logpath   = /var/log/nginx/*-access.log
 maxretry  = 120
 findtime  = 60
 bantime   = 172800
+{% endif %}

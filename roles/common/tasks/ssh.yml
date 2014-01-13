@@ -1,0 +1,22 @@
+---
+
+- name: ensure ssh is started
+  service: name=ssh state=started enabled=yes
+
+- name: add /etc/ssh/sshd_config
+  template: >
+    src=etc-ssh-sshd_config.j2
+    dest=/etc/ssh/sshd_config
+    owner=root group=root mode=0644
+  notify:
+    - ssh restart
+  tags:
+    - common:ssh
+
+- name: add /etc/ssh/ssh_config
+  copy: >
+    src=etc-ssh-ssh_config
+    dest=/etc/ssh/ssh_config
+    owner=root group=root mode=0644
+  tags:
+    - common:ssh

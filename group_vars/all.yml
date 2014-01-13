@@ -1,0 +1,113 @@
+---
+
+# Commons variables to all hosts
+common:
+
+  # Basic info
+  serverLocale: "en_US.UTF-8"
+  timezone: "Etc/UTC"
+
+  # Name of the application, used in setting directories and a system
+  # level user that be the owner/group on application files
+  applicationName: "wordpress"
+
+  # Your email address
+  adminEmail: "put@youremail.com"
+
+  packages:
+
+    # Packages that will be installed/ensured for sure
+    core:
+
+      # Generic tools
+      - "unattended-upgrades"
+      - "psmisc"
+      - "rsync"
+      - "zip"
+      - "unzip"
+      - "logrotate"
+      - "logwatch"
+      - "git-core"
+      - "supervisor"
+      - "sysstat"
+      - "vim-nox"
+
+      # Network tools
+      - "ntp"
+      - "htop"
+      - "iftop"
+      - "curl"
+      - "wget"
+      - "rsyslog"
+      - "rsyslog-gnutls"
+      - "rsyslog-relp"
+      - "openssh-client"
+      - "openssh-server"
+      - "openssl"
+      - "nload"
+      - "vnstat"
+
+      # Security tools
+      - "fail2ban"
+      - "apparmor"
+      - "auditd"
+      - "rkhunter"
+      - "ufw"
+
+    # Additional packages you wish to install
+    additional: []
+
+    # Packages held from auto update
+    held: 
+      - "linux-*"
+      - "memcached"
+      - "nginx*"
+      - "percona-*"
+      - "php5-*"
+
+  ntp:
+    servers:
+      - "server 0.europe.pool.ntp.org"
+      - "server 1.europe.pool.ntp.org"
+      - "server 2.europe.pool.ntp.org"
+      - "server 3.europe.pool.ntp.org"
+
+  openssh:
+    port: "22"
+    loginGracetime: "15"
+    permitRootLogin: "no" 
+    maxAuthTries: "3"
+    rsaAuthentication: "yes"
+    pubkeyAuthentication: "yes"
+    allowUsers: "wordpress"
+    clientAliveInterval: "300"
+    clientAliveCountMax: "3"
+    maxStartups: "3:50:10"
+    x11Forwarding: "yes"
+    x11DisplayOffset: "10"
+    printMotd: "no"
+    printLastLog: "yes"
+    tcpKeepAlive: "yes"
+
+  iptables:
+    sshListenPort: 22
+
+  fail2ban:
+    # An array of strings for IP addresses that should be whitelisted by fail2ban
+    whiteList: [] # Add whatever ips you want: [ip1, ip2, ...]
+
+    # What services you want enabled for fail2ban
+    services: 
+      enabled: {ssh: true, sshddos: true, nginx: true}
+
+  mysql:
+    # the IP address to your mysql server.
+    # if setting up a single server, use 127.0.0.1
+    hosts: 
+      - 127.0.0.1
+
+  memcached:
+    # the IP addresses of memcached servers.
+    # if setting up a single server, use 127.0.0.1
+    hosts:
+      - 127.0.0.1

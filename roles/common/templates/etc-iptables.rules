@@ -13,7 +13,7 @@
 -A INPUT -p tcp --dport 80 -j ACCEPT
 
 # allow ssh connections
--A INPUT -p tcp -m state --state NEW --dport {{ sshListenPort }} -j ACCEPT
+-A INPUT -p tcp -m state --state NEW --dport {{ common.iptables.sshListenPort }} -j ACCEPT
 
 # allow ping requests
 -A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT

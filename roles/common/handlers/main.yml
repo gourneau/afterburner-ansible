@@ -1,4 +1,8 @@
 ---
+
+- name: ntp restart
+  service: name=ntp state=restarted
+
 - name: timezone apply
   shell: dpkg-reconfigure --frontend noninteractive tzdata
 

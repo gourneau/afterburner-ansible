@@ -1,8 +1,10 @@
+# {{ ansible_managed }}
+#
 # Package generated configuration file
 # See the sshd_config(5) manpage for details
 
 # What ports, IPs and protocols we listen for
-Port {{ sshListenPort }}
+Port {{ common.openssh.port }}
 
 # Use these options to restrict which interfaces/protocols sshd will bind to
 #ListenAddress ::
@@ -26,13 +28,13 @@ SyslogFacility AUTH
 LogLevel INFO
 
 # Authentication:
-LoginGraceTime 60
-PermitRootLogin without-password
+LoginGraceTime {{ common.openssh.loginGracetime }}
+PermitRootLogin {{ common.openssh.permitRootLogin }}
 StrictModes yes
-MaxAuthTries 6
+MaxAuthTries {{ common.openssh.maxAuthTries }}
 
-RSAAuthentication yes
-PubkeyAuthentication yes
+RSAAuthentication {{ common.openssh.rsaAuthentication }}
+PubkeyAuthentication {{ common.openssh.pubkeyAuthentication }}
 #AuthorizedKeysFile %h/.ssh/authorized_keys
 
 # Don't read the user's ~/.rhosts and ~/.shosts files
@@ -64,17 +66,17 @@ PasswordAuthentication no
 #GSSAPIAuthentication no
 #GSSAPICleanupCredentials yes
 
-X11Forwarding yes
-X11DisplayOffset 10
-PrintMotd no
-PrintLastLog yes
-TCPKeepAlive yes
+X11Forwarding {{ common.openssh.x11Forwarding }}
+X11DisplayOffset {{ common.openssh.x11DisplayOffset }}
+PrintMotd {{ common.openssh.printMotd }}
+PrintLastLog {{ common.openssh.printLastLog }}
+TCPKeepAlive {{ common.openssh.tcpKeepAlive }}
 #UseLogin no
 
 UseDNS no
-ClientAliveInterval 300
-ClientAliveCountMax 3
-MaxStartups 3:50:10
+ClientAliveInterval {{ common.openssh.clientAliveInterval }}
+ClientAliveCountMax {{ common.openssh.clientAliveCountMax }}
+MaxStartups {{ common.openssh.maxStartups }}
 
 # Allow client to pass locale environment variables
 AcceptEnv LANG LC_*
@@ -91,3 +93,6 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 # PAM authentication, then enable this but set PasswordAuthentication
 # and ChallengeResponseAuthentication to 'no'.
 UsePAM yes
+
+# Who can login?
+AllowUsers {{ common.openssh.allowUsers }}

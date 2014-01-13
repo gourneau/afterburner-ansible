@@ -1,0 +1,8 @@
+---
+
+- name: update /etc/pam.d/common-session
+  lineinfile: >
+    state=present
+    regexp=^
+    line='session required        pam_limits.so'
+    dest=/etc/pam.d/common-session

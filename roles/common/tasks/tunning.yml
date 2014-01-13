@@ -1,0 +1,8 @@
+---
+
+- name: add /etc/sysctl.d/99-tuning.conf
+  copy: >
+    src=etc-sysctl.d-99-tuning.conf
+    dest=/etc/sysctl.d/99-tuning.conf
+    owner=root group=root mode=0644
+  notify: start procps

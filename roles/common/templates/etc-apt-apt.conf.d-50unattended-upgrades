@@ -8,7 +8,7 @@ Unattended-Upgrade::Allowed-Origins {
 
 // List of packages to not update
 Unattended-Upgrade::Package-Blacklist {
-{% for package in heldPackages %}
+{% for package in common.packages.held %}
   "{{ package }}";
 {% endfor %}
 };

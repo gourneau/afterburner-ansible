@@ -1,22 +1,26 @@
 ---
+
 - name: common tasks...
   hosts: all
+  sudo: yes
   roles:
     - { role: 'common', tags: [ 'common' ] }
 
-- name: configure and deploy mysql servers...
-  hosts: mysql-servers
-  roles:
-    - { role: 'mysql', tags: [ 'mysql' ] }
+#- name: configure and deploy mysql servers...
+#  hosts: mysql-servers
+#  roles:
+#    - { role: 'mysql', tags: [ 'mysql' ] }
 
-- name: configure and deploy memcached servers...
-  hosts: memcached-servers
-  roles:
-    - { role: 'memcached', tags: [ 'memcached' ] }
+#- name: configure and deploy memcached servers...
+#  hosts: memcached-servers
+#  sudo: yes
+#  roles:
+#    - { role: 'memcached', tags: [ 'memcached' ] }
 
-- name: configure and deploy web servers...
-  hosts: web-servers
-  roles:
-    - { role: 'nginx', tags: [ 'nginx' ] }
-    - { role: 'php', tags: [ 'php' ] }
-    - { role: 'wordpress', tags: [ 'wordpress' ] }
+#- name: configure and deploy web servers...
+#  hosts: web-servers
+#  sudo: yes
+#  roles:
+#    - { role: 'nginx', tags: [ 'nginx' ] }
+#    - { role: 'php', tags: [ 'php' ] }
+#    - { role: 'wordpress', tags: [ 'wordpress' ] }

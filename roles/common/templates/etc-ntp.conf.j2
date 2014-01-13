@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+
+{% for server in common.ntp.servers %}
+{{ server }}
+{% endfor %}
