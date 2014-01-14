@@ -4,6 +4,7 @@
 # Configuration file inspired by:
 #   - Calomel: https://calomel.org/nginx.html
 #   - Dak1n1: http://dak1n1.com/blog/12-nginx-performance-tuning
+#   - Voceconnect: https://github.com/voceconnect/afterburner-ansible/blob/master/roles/nginx/templates/etc-nginx-nginx.conf.j2
 #   - Myself: https://github.com/aldoborrero/wordpress-nginx/blob/master/nginx.conf
 # -------------------------------------------------------------
 
@@ -250,5 +251,5 @@ http {
   # ---------------------------------------------
 
   ## include all virtualhosts
-  #include /etc/nginx/sites-enabled/*.conf;
+  include /etc/nginx/sites-enabled/*.conf;
 }

@@ -6,7 +6,7 @@ nginx:
   config:
     user: "www-data"
     pid: "/var/run/nginx.pid"
-    worker_processes: {{ ansible_processor_cores }}
+    worker_processes: "{{ ansible_processor_cores }}"
 
     events:
       worker_connections: "4000"
