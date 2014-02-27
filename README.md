@@ -30,12 +30,10 @@ First, get [Ansible](http://ansibleworks.com/docs/gettingstarted.html#getting-an
 Once you have Ansible installed...
 
 1. Clone this repository and `cd afterburner-ansible`
-2. Run `./install`. (this copies `.sample` files for editing)
-3. Edit `group_vars/` files and change any variables needed to match your application/requirements.
-4. Edit `hosts` and supply the domain names of your server(s).
-5. Edit `ansible.cfg` and change any variables needed to run Ansible tasks against your server(s).
-6. Execute `ansible all -m ping` to ensure Ansible can connect to your hosts
-7. Run `ansible-playbook site.yml`
+2. Copy `hosts.sample` to `hosts` and supply the domain names of your server(s) in `hosts`.
+3. Edit `group_vars/` .yml files and change any variables needed to match your application/requirements.
+4. Edit `ansible.cfg` and change any variables needed to run Ansible tasks against your server(s).
+5. Run `ansible-playbook -i hosts site.yml`
 
 Visit your application's domain name to view your WordPress install. The `wp-admin` login details:
 
